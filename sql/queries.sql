@@ -4,6 +4,8 @@ SELECT COUNT(*) FROM companies;
 
 SELECT COUNT(*) FROM balancesheet;
 
+SELECT COUNT(*) FROM cashflow;
+
 SELECT COUNT(*) FROM stock_prices;
 
 SELECT DISTINCT sector FROM companies;

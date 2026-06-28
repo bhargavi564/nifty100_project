@@ -83,14 +83,54 @@ tables = [
 
 ]
 
+audit=[] 
+
 for table in tables:
 
     cursor.execute(f"SELECT COUNT(*) FROM {table}")
 
     rows = cursor.fetchone()[0]
+              
+    path = f"data/processed/{table}.csv"
+
+    df = pd.read_csv(path)
+
+    df.to_sql(
+
+        table,
+
+        conn,
+
+        if_exists="replace",
+
+        index=False
+
+    )
+
+    rows = len(df)
+
+    audit.append({
+
+        "table": table,
+
+        "rows_loaded": rows
+
+    })
 
     print(table, rows)
-    
+
+audit_df = pd.DataFrame(audit)
+
+audit_df.to_csv(
+
+"output/load_audit.csv",
+
+index=False
+
+)
+
+print("Audit Report Saved")
+
 conn.commit()
 conn.close()
-print("Database Ready")
+print("Database Loaded Successfully")
