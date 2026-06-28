@@ -20,7 +20,6 @@ files = [
     "stock_prices.xlsx"
 ]
 
-
 def normalize(df):
     df.columns = (
         df.columns.astype(str)
@@ -30,16 +29,31 @@ def normalize(df):
     )
     return df
 
+header_map = {
+    "companies.xlsx": 1,
+    "balancesheet.xlsx": 1,
+    "cashflow.xlsx": 1,
+    "analysis.xlsx": 1,
+    "documents.xlsx": 1,
+    "profitandloss.xlsx": 1,
+    "prosandcons.xlsx": 1,
+    "financial_ratios.xlsx": 0,
+    "market_cap.xlsx": 0,
+    "peer_groups.xlsx": 0,
+    "sectors.xlsx": 0,
+    "stock_prices.xlsx": 0
+}
 
 for file in files:
-
-    if file == "companies.xlsx":
-        df = pd.read_excel(RAW_FOLDER / file, header=1)
-    else:
-        df = pd.read_excel(RAW_FOLDER / file, header=0)
-
+    df = pd.read_excel(
+        RAW_FOLDER / file,
+        header=header_map[file]
+    )
+    print(f"\n{file}")
+    print("Shape:",df.shape)
+    print("Columns:",list(df.columns))
+    
     df = normalize(df)
-
     df.drop_duplicates(inplace=True)
     df.dropna(how="all", inplace=True)
     df=df.astype(str)
@@ -51,6 +65,4 @@ for file in files:
         PROCESSED_FOLDER / output,
         index=False
     )
-
     print(output, "saved")
-  
