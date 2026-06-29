@@ -1,11 +1,24 @@
+"""
+loader.py
+
+Purpose:
+Read all raw Excel files, clean them using normaliser.py,
+and save them as CSV files in data/processed.
+"""
+
 import pandas as pd
 from pathlib import Path
+from normaliser import clean_dataframe
 
+# Folder paths
 RAW_FOLDER = Path("data/raw")
 PROCESSED_FOLDER = Path("data/processed")
-PROCESSED_FOLDER.mkdir(exist_ok=True)
 
-files = [
+# Create processed folder if it doesn't exist
+PROCESSED_FOLDER.mkdir(parents=True, exist_ok=True)
+
+# Excel files
+FILES = [
     "companies.xlsx",
     "balancesheet.xlsx",
     "cashflow.xlsx",
@@ -20,16 +33,8 @@ files = [
     "stock_prices.xlsx"
 ]
 
-def normalize(df):
-    df.columns = (
-        df.columns.astype(str)
-        .str.strip()
-        .str.lower()
-        .str.replace(" ", "_")
-    )
-    return df
-
-header_map = {
+# Header row mapping
+HEADER_MAP = {
     "companies.xlsx": 1,
     "balancesheet.xlsx": 1,
     "cashflow.xlsx": 1,
@@ -44,25 +49,53 @@ header_map = {
     "stock_prices.xlsx": 0
 }
 
-for file in files:
-    df = pd.read_excel(
-        RAW_FOLDER / file,
-        header=header_map[file]
-    )
-    print(f"\n{file}")
-    print("Shape:",df.shape)
-    print("Columns:",list(df.columns))
-    
-    df = normalize(df)
-    df.drop_duplicates(inplace=True)
-    df.dropna(how="all", inplace=True)
-    df=df.astype(str)
-    df=df.fillna("")
 
-    output = file.replace(".xlsx", ".csv")
+def load_all_files():
+    """
+    Read every Excel file, clean it,
+    and save as CSV.
+    """
 
-    df.to_csv(
-        PROCESSED_FOLDER / output,
-        index=False
-    )
-    print(output, "saved")
+    print("=" * 60)
+    print("Starting Excel Loader")
+    print("=" * 60)
+
+    for file in FILES:
+
+        try:
+            print(f"\nReading: {file}")
+
+            # Read Excel
+            df = pd.read_excel(
+                RAW_FOLDER / file,
+                header=HEADER_MAP[file]
+            )
+
+            print(f"Original Shape: {df.shape}")
+
+            # Clean DataFrame
+            df = clean_dataframe(df)
+
+            print(f"Cleaned Shape : {df.shape}")
+
+            # Save CSV
+            output_file = file.replace(".xlsx", ".csv")
+
+            df.to_csv(
+                PROCESSED_FOLDER / output_file,
+                index=False
+            )
+
+            print(f"Saved: {output_file}")
+
+        except Exception as e:
+            print(f"Error processing {file}")
+            print(e)
+
+    print("\n" + "=" * 60)
+    print("All files processed successfully.")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    load_all_files()

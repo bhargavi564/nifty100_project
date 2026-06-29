@@ -2,135 +2,70 @@ import sqlite3
 import pandas as pd
 from pathlib import Path
 
-DB_PATH=Path("data/nifty100.db")
-conn=sqlite3.connect(DB_PATH)
-print("Database Created")
+DB_PATH = Path("data/nifty100.db")
 
-conn.execute("PRAGMA foreign_keys= ON")
-cursor=conn.cursor()
+TABLES = [
 
-schema=open("sql/schema.sql").read()
-cursor.executescript(schema)
-print("Tables Created")
-
-companies=pd.read_csv("data/processed/companies.csv")
-companies.to_sql("companies",conn,if_exists="replace",index=False)
-
-files = [
-
-"companies",
-
-"balancesheet",
-
-"cashflow",
-
-"analysis",
-
-"documents",
-
-"profitandloss",
-
-"prosandcons",
-
-"financial_ratios",
-
-"peer_groups",
-
-"stock_prices"
+    "companies",
+    "balancesheet",
+    "cashflow",
+    "analysis",
+    "documents",
+    "profitandloss",
+    "prosandcons",
+    "financial_ratios",
+    "market_cap",
+    "peer_groups",
+    "sectors",
+    "stock_prices"
 
 ]
 
-for table in files:
-              
-    df = pd.read_csv(
-        f"data/processed/{table}.csv"
-    )
 
-    df.to_sql(
-        table,
-        conn,
-        if_exists="replace",
+def load_database():
+
+    conn = sqlite3.connect(DB_PATH)
+
+    cursor = conn.cursor()
+
+    cursor.execute("PRAGMA foreign_keys = ON")
+
+    schema = open("sql/schema.sql").read()
+
+    cursor.executescript(schema)
+
+    audit=[]
+
+    for table in TABLES:
+
+        path=f"data/processed/{table}.csv"
+
+        df=pd.read_csv(path)
+
+        df.to_sql(
+            table,
+            conn,
+            if_exists="replace",
+            index=False
+        )
+
+        audit.append({
+            "table":table,
+            "rows_loaded":len(df)
+        })
+
+        print(table,"Loaded")
+
+    pd.DataFrame(audit).to_csv(
+        "output/load_audit.csv",
         index=False
     )
 
-    print(f"{table} Loaded")
-    
-conn = sqlite3.connect("data/nifty100.db")
+    conn.commit()
+    conn.close()
 
-cursor = conn.cursor()
+    print("Database Loaded Successfully")
 
-tables = [
 
-"companies",
-
-"balancesheet",
-
-"cashflow",
-
-"analysis",
-
-"documents",
-
-"profitandloss",
-
-"prosandcons",
-
-"financial_ratios",
-
-"peer_groups",
-
-"stock_prices"
-
-]
-
-audit=[] 
-
-for table in tables:
-
-    cursor.execute(f"SELECT COUNT(*) FROM {table}")
-
-    rows = cursor.fetchone()[0]
-              
-    path = f"data/processed/{table}.csv"
-
-    df = pd.read_csv(path)
-
-    df.to_sql(
-
-        table,
-
-        conn,
-
-        if_exists="replace",
-
-        index=False
-
-    )
-
-    rows = len(df)
-
-    audit.append({
-
-        "table": table,
-
-        "rows_loaded": rows
-
-    })
-
-    print(table, rows)
-
-audit_df = pd.DataFrame(audit)
-
-audit_df.to_csv(
-
-"output/load_audit.csv",
-
-index=False
-
-)
-
-print("Audit Report Saved")
-
-conn.commit()
-conn.close()
-print("Database Loaded Successfully")
+if __name__ == "__main__":
+    load_database()
