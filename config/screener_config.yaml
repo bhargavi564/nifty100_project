@@ -1,0 +1,44 @@
+# Return on Equity
+roe_min: 15
+
+# Debt to Equity
+debt_to_equity_max: 1
+
+# Free Cash Flow
+fcf_min: 0
+
+# Revenue CAGR
+revenue_cagr_5yr_min: 10
+
+# PAT CAGR
+pat_cagr_5yr_min: 10
+
+# Operating Profit Margin
+opm_min: 15
+
+# Price to Earnings
+pe_max: 30
+
+# Price to Book
+pb_max: 5
+
+# Dividend Yield
+dividend_yield_min: 1
+
+# Interest Coverage Ratio
+icr_min: 2
+
+# Market Capitalization (Crores)
+market_cap_min: 10000
+
+# Net Profit (Crores)
+net_profit_min: 100
+
+# EPS CAGR
+eps_cagr_min: 10
+
+# Asset Turnover
+asset_turnover_min: 1
+
+# Sales (Crores)
+sales_min: 500
