@@ -3,32 +3,29 @@ import pandas as pd
 import yaml
 from pathlib import Path
 
-# -----------------------------
+# -----------------------------------
 # Paths
-# -----------------------------
+# -----------------------------------
+
 DB_PATH = Path("data/nifty100.db")
 CONFIG_PATH = Path("config/screener_config.yaml")
 OUTPUT_PATH = Path("output/screener_results.csv")
 
 
-# -----------------------------
-# Load Configuration
-# -----------------------------
+# -----------------------------------
+# Load YAML Config
+# -----------------------------------
+
 def load_config():
-    print("Loading screener configuration...\n")
-
     with open(CONFIG_PATH, "r") as file:
-        config = yaml.safe_load(file)
-
-    return config
+        return yaml.safe_load(file)
 
 
-# -----------------------------
-# Load Financial Ratios Table
-# -----------------------------
+# -----------------------------------
+# Load Financial Ratios
+# -----------------------------------
+
 def load_data():
-    print("Connecting to SQLite database...\n")
-
     conn = sqlite3.connect(DB_PATH)
 
     df = pd.read_sql(
@@ -38,28 +35,24 @@ def load_data():
 
     conn.close()
 
-    print("Loaded financial_ratios table.\n")
-
     return df
 
 
-# -----------------------------
-# Main
-# -----------------------------
-def main():
+# -----------------------------------
+# Apply Filters
+# -----------------------------------
 
-    config = load_config()
+def apply_filters(df, config):
 
-    df = load_data()
+    df = df.copy()
 
-    # ---------------- ROE ----------------
+    # ROE
     if "return_on_equity_pct" in df.columns:
         df = df[
-            df["return_on_equity_pct"] >= config["roe_min"]
+            df["return_on_equity_pct"] >= config.get("roe_min", 0)
         ]
-    print("Applied ROE filter.")
 
-    # ---------------- Debt To Equity ----------------
+    # Debt to Equity
     if "debt_to_equity" in df.columns:
 
         if "broad_sector" in df.columns:
@@ -73,64 +66,46 @@ def main():
 
             df = df[
                 financial_mask |
-                (df["debt_to_equity"] <= config["debt_to_equity_max"])
+                (df["debt_to_equity"] <= config.get("debt_to_equity_max", 999999))
             ]
 
         else:
 
             df = df[
-                df["debt_to_equity"] <= config["debt_to_equity_max"]
+                df["debt_to_equity"] <= config.get("debt_to_equity_max", 999999)
             ]
 
-    print("Applied Debt-to-Equity filter.")
+    # Free Cash Flow
+    if "free_cash_flow" in df.columns:
+        df = df[
+            df["free_cash_flow"] >= config.get("fcf_min", -999999)
+        ]
 
-    # ---------------- Revenue CAGR ----------------
+    # Revenue CAGR
     if "revenue_cagr_5yr" in df.columns:
         df = df[
-            df["revenue_cagr_5yr"] >= config["revenue_cagr_5yr_min"]
+            df["revenue_cagr_5yr"] >= config.get("revenue_cagr_5yr_min", -999999)
         ]
 
-    print("Applied Revenue CAGR filter.")
-
-    # ---------------- PAT CAGR ----------------
+    # PAT CAGR
     if "pat_cagr_5yr" in df.columns:
         df = df[
-            df["pat_cagr_5yr"] >= config["pat_cagr_5yr_min"]
+            df["pat_cagr_5yr"] >= config.get("pat_cagr_5yr_min", -999999)
         ]
 
-    print("Applied PAT CAGR filter.")
+    # EPS CAGR
+    if "eps_cagr_5yr" in df.columns:
+        df = df[
+            df["eps_cagr_5yr"] >= config.get("eps_cagr_min", -999999)
+        ]
 
-    # ---------------- Operating Margin ----------------
+    # Operating Profit Margin
     if "operating_profit_margin_pct" in df.columns:
         df = df[
-            df["operating_profit_margin_pct"] >= config["opm_min"]
+            df["operating_profit_margin_pct"] >= config.get("opm_min", -999999)
         ]
 
-    print("Applied OPM filter.")
-
-    # ---------------- PE ----------------
-    if "pe" in df.columns:
-        df = df[
-            df["pe"] <= config["pe_max"]
-        ]
-
-    # ---------------- PB ----------------
-    if "pb" in df.columns:
-        df = df[
-            df["pb"] <= config["pb_max"]
-        ]
-
-    print("Applied PE/PB filters.")
-
-    # ---------------- Dividend Yield ----------------
-    if "dividend_yield" in df.columns:
-        df = df[
-            df["dividend_yield"] >= config["dividend_yield_min"]
-        ]
-
-    print("Applied Dividend Yield filter.")
-
-    # ---------------- Interest Coverage ----------------
+    # Interest Coverage
     if "interest_coverage" in df.columns:
 
         if "icr_label" in df.columns:
@@ -144,96 +119,106 @@ def main():
 
             df = df[
                 debt_free |
-                (df["interest_coverage"] >= config["icr_min"])
+                (df["interest_coverage"] >= config.get("icr_min", 0))
             ]
 
         else:
 
             df = df[
-                df["interest_coverage"] >= config["icr_min"]
+                df["interest_coverage"] >= config.get("icr_min", 0)
             ]
 
-    print("Applied Interest Coverage filter.")
-
-    # ---------------- Market Cap ----------------
+    # Market Cap
     if "market_cap" in df.columns:
         df = df[
-            df["market_cap"] >= config["market_cap_min"]
+            df["market_cap"] >= config.get("market_cap_min", 0)
         ]
 
-    print("Applied Market Cap filter.")
-
-    # ---------------- Net Profit ----------------
+    # Net Profit
     if "net_profit" in df.columns:
         df = df[
-            df["net_profit"] >= config["net_profit_min"]
+            df["net_profit"] >= config.get("net_profit_min", 0)
         ]
 
-    print("Applied Net Profit filter.")
-
-    # ---------------- EPS CAGR ----------------
-    if "eps_cagr_5yr" in df.columns:
-        df = df[
-            df["eps_cagr_5yr"] >= config["eps_cagr_min"]
-        ]
-
-    print("Applied EPS CAGR filter.")
-
-    # ---------------- Asset Turnover ----------------
+    # Asset Turnover
     if "asset_turnover" in df.columns:
         df = df[
-            df["asset_turnover"] >= config["asset_turnover_min"]
+            df["asset_turnover"] >= config.get("asset_turnover_min", 0)
         ]
 
-    print("Applied Asset Turnover filter.")
-
-    # ---------------- Sales ----------------
+    # Sales
     if "sales" in df.columns:
         df = df[
-            df["sales"] >= config["sales_min"]
+            df["sales"] >= config.get("sales_min", 0)
         ]
 
-    print("Applied Sales filter.")
-
-    # ---------------- Free Cash Flow ----------------
-    if "free_cash_flow" in df.columns:
+    # PE Ratio
+    if "pe_ratio" in df.columns:
         df = df[
-            df["free_cash_flow"] >= config["fcf_min"]
+            df["pe_ratio"] <= config.get("pe_max", 999999)
         ]
 
-    print("Applied Free Cash Flow filter.")
+    # PB Ratio
+    if "price_to_book" in df.columns:
+        df = df[
+            df["price_to_book"] <= config.get("pb_max", 999999)
+        ]
 
-    # ---------------- Sort ----------------
+    # Dividend Yield
+    if "dividend_yield" in df.columns:
+        df = df[
+            df["dividend_yield"] >= config.get("dividend_yield_min", 0)
+        ]
+
+    # Dividend Payout Ratio
+    if "dividend_payout_ratio_pct" in df.columns:
+        df = df[
+            df["dividend_payout_ratio_pct"]
+            <= config.get("dividend_payout_ratio_pct_max", 100)
+        ]
+
+    # Composite Score Sorting
     if "composite_quality_score" in df.columns:
-
         df = df.sort_values(
             by="composite_quality_score",
             ascending=False
         )
 
-    print("Sorted companies by Composite Quality Score.")
+    return df.reset_index(drop=True)
 
-    # ---------------- Save ----------------
+
+# -----------------------------------
+# Main
+# -----------------------------------
+
+def main():
+
+    print("Loading Configuration...")
+
+    config = load_config()
+
+    print("Loading Financial Ratios...")
+
+    df = load_data()
+
+    print("Applying Filters...")
+
+    result = apply_filters(df, config)
+
     OUTPUT_PATH.parent.mkdir(exist_ok=True)
 
-    df.to_csv(
+    result.to_csv(
         OUTPUT_PATH,
         index=False
     )
 
-    print("\nFiltering Completed Successfully.\n")
+    print("\nFiltering Completed Successfully")
+    print(f"Matching Companies : {len(result)}")
+    print(f"Output Saved : {OUTPUT_PATH}")
 
-    print(f"Matching Companies: {len(df)}")
-
-    print("\nResults saved to:")
-    print(OUTPUT_PATH)
-
-    print("\nTop 10 Companies:\n")
-    print(df.head(10))
+    print("\nTop Results\n")
+    print(result.head())
 
 
-# -----------------------------
-# Run
-# -----------------------------
 if __name__ == "__main__":
     main()
