@@ -1,14 +1,19 @@
 import os
 import sys
 import unittest
+import warnings
 from pathlib import Path
 from fastapi.testclient import TestClient
 
-# Resolve paths
+# Suppress DeprecationWarnings for a cleaner test output
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# Resolve paths dynamically
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 
 from src.api.main import app
+
 
 class TestFastAPIServer(unittest.TestCase):
 
@@ -28,6 +33,7 @@ class TestFastAPIServer(unittest.TestCase):
         
         # Verify db_row_counts is a dictionary (it will contain tables if DB exists)
         self.assertIsInstance(data["db_row_counts"], dict)
+
 
 if __name__ == "__main__":
     unittest.main()
